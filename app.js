@@ -110,7 +110,24 @@ function route() {
   }
   refresh();
 }
+function revealToday() {
+  if ($('calendar').hidden || document.querySelector('dialog[open]')) return;
+  refresh();
+  const id = lastDay < start ? start : lastDay > end ? end : lastDay;
+  const row = rows.get(id);
+  const month = row.closest('.month-section');
+  const barHeight = document.querySelector('.calendar-progress').offsetHeight;
+  window.scrollBy(0, month.getBoundingClientRect().top - barHeight);
+  if (row.getBoundingClientRect().bottom > window.innerHeight) {
+    row.scrollIntoView({block: 'center'});
+  }
+  row.focus({preventScroll: true});
+}
 history.scrollRestoration = 'manual';
+window.addEventListener('pageshow', revealToday);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) revealToday();
+});
 window.addEventListener('popstate',route);
 $('back').onclick = () => { if (history.state?.daybook) history.back(); else {history.replaceState(null,'',location.pathname+location.search);route();} };
 $('note').oninput = () => {
