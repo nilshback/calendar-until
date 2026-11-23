@@ -39,7 +39,11 @@ async function request(path, token, options = {}) {
   });
   if(response.status === 401) throw Error('GitHub rejected the token. Enter a current token for calendar-until-data.');
   if(response.status === 404) throw Error('Check that your token includes nilshback/calendar-until-data and that main contains journal.json.');
-  if(response.status === 403 && options.method === 'PUT') throw Error('GitHub blocked the upload. Check that your token has Contents read and write for calendar-until-data.');
+  if(response.status === 403 && options.method === 'PUT') {
+    const details = await response.json().catch(() => null);
+    const reason = details?.message || 'The server provided no further details.';
+    throw Error('GitHub refused the upload (403). ' + reason);
+  }
   if(!response.ok) throw Error('GitHub returned '+response.status+'. Check the connection, token permissions, and repository branches.');
   return response.json();
 }
