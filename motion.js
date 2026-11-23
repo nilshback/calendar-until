@@ -5,10 +5,12 @@
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const segmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter() : null;
   const done = document.getElementById('finishEdit');
-  let before, original, latest, insertions, timer;
+  let before, original, latest, insertions;
+  let frame, replayVersion = 0;
 
   function clear() {
-    clearTimeout(timer);
+    cancelAnimationFrame(frame);
+    replayVersion++;
     layer.hidden = true;
     layer.replaceChildren();
   }
@@ -16,7 +18,6 @@
     return segmenter ? Array.from(segmenter.segment(text), item => item.segment) : Array.from(text);
   }
   function draw(value, ranges) {
-    if (!ranges.length) return 0;
     const marks = [];
     let last = 0;
     layer.replaceChildren();
@@ -75,15 +76,14 @@
     }
     layer.append(fragment);
     const stagger = Math.min(40, 820 / Math.max(1,glyphs.length));
-    glyphs.forEach((glyph,index) => {
+    return glyphs.map((glyph,index) => {
       const frames = [
         {opacity: 0, transform: 'translateY(2px) scale(.86)'},
         {opacity: .6, transform: 'translateY(-1.5px) scale(1.07)', offset: .58},
         {opacity: 1, transform: 'none'}
       ];
-      glyph.animate(frames, {duration: 270, delay: index*stagger, fill: 'both', easing: 'ease-out'});
+      return glyph.animate(frames, {duration: 270, delay: index*stagger, fill: 'both', easing: 'ease-out'}).finished;
     });
-    return glyphs.length ? 270 + (glyphs.length-1)*stagger : 0;
   }
   function begin() {
     clear();
@@ -98,7 +98,15 @@
     if (!mask || reduced.matches || note.value !== latest || original === latest) return;
     // Each run of ones marks text added during this edit that still exists.
     const added = Array.from(mask.matchAll(/1+/g), match => [match.index, match.index + match[0].length]);
-    if (added.length) timer = setTimeout(clear, draw(latest, added));
+    if (!added.length) return;
+    const version = replayVersion;
+    const value = latest;
+    frame = requestAnimationFrame(() => {
+      if (note.value !== value || document.getElementById('editor').hidden) return;
+      Promise.allSettled(draw(value, added)).then(() => {
+        if (version === replayVersion) clear();
+      });
+    });
   }
   note.addEventListener('focus', begin);
   note.addEventListener('beforeinput', () => {
@@ -106,8 +114,9 @@
     before = {value: note.value, start: note.selectionStart};
   });
   note.addEventListener('input', () => {
-    if (!before || insertions == null) return;
-    const old = before;
+    if (insertions == null) return;
+    // Some mobile keyboards deliver autocorrect or dictation as input alone.
+    const old = before || {value: latest, start: note.selectionStart};
     before = null;
     const value = note.value;
     let start = Math.min(old.start, note.selectionStart);
@@ -125,6 +134,16 @@
   done.addEventListener('pointerdown', event => event.preventDefault());
   done.addEventListener('click', () => { note.blur(); });
   note.addEventListener('blur', finish);
-  window.addEventListener('resize', clear);
+  // Dismissing a phone keyboard often resizes the viewport during playback.
+  // Let the animation finish across height changes; rotation changes text wrapping.
+  let layoutWidth = document.documentElement.clientWidth;
+  window.addEventListener('resize', () => {
+    const width = document.documentElement.clientWidth;
+    if (width !== layoutWidth) clear();
+    layoutWidth = width;
+  });
+  document.getElementById('editor').addEventListener('click', event => {
+    if (event.target !== note && document.activeElement === note) note.blur();
+  });
   window.addEventListener('popstate', clear);
 })();

@@ -1,4 +1,4 @@
-const cacheName = 'daybook-' + self.registration.scope + '-v13';
+const cacheName = 'daybook-' + self.registration.scope + '-v14';
 self.addEventListener('install', event => event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(['./','./index.html','./app.js','./motion.js','./calendar.css','./sync.js','./app.webmanifest','./icon-192.png','./icon-512.png'].map(path => new Request(path,{cache:'reload'})))).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', event => {
