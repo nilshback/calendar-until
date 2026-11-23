@@ -1,5 +1,5 @@
-const cacheName = 'daybook-' + self.registration.scope + '-v3';
-self.addEventListener('install', event => event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(['./','./index.html','./app.js','./calendar.css','./sync.js','./app.webmanifest','./icon-192.png','./icon-512.png'])).then(() => self.skipWaiting())));
+const cacheName = 'daybook-' + self.registration.scope + '-v4';
+self.addEventListener('install', event => event.waitUntil(caches.open(cacheName).then(cache => cache.addAll(['./','./index.html','./app.js','./calendar.css','./sync.js','./app.webmanifest','./icon-192.png','./icon-512.png'].map(path => new Request(path,{cache:'reload'})))).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', event => {
   if(event.request.method !== 'GET' || !event.request.url.startsWith(self.registration.scope)) return;
