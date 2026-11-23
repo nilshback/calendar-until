@@ -4,10 +4,15 @@
 
 <main><p id="notice" role="alert"></p>
 <section id="calendar" aria-label="Journal calendar">
-  <button id="settings" aria-label="Calendar settings" aria-haspopup="dialog" title="Calendar settings">•••</button>
-  <div id="months"></div>
+  <details class="calendar-progress" open>
+    <summary>Calendar progress</summary>
+    <progress id="elapsed" aria-label="Elapsed calendar days"></progress>
+    <div class="counts"><span id="passed"></span><span id="remaining"></span></div>
+  </details>
+  <div class="month-stack"><button id="settings" aria-label="Calendar settings" aria-haspopup="dialog" title="Calendar settings">•••</button>
+  <div id="months"></div></div>
 </section>
-<section id="editor" hidden><nav><button id="back">← Calendar</button><div class="editor-actions"><span id="status" role="status"></span><button id="finishEdit" hidden>Done</button></div></nav><h1 id="heading"></h1><p id="subtitle"></p><div class="writing"><textarea id="note" aria-label="Daily note" placeholder="Write your goals, thoughts, or a moment from today…"></textarea><div id="replay" aria-hidden="true" hidden></div></div></section></main>
+<section id="editor" hidden><nav><button id="back" aria-label="Back to calendar">&lt;</button><div class="editor-actions"><span id="status" role="status"></span><button id="finishEdit" hidden>Done</button></div></nav><h1 id="heading"></h1><p id="subtitle"></p><div class="writing"><textarea id="note" aria-label="Daily note" placeholder="Write your goals, thoughts, or a moment from today…"></textarea><div id="replay" aria-hidden="true" hidden></div></div></section></main>
 <dialog id="preferences" aria-labelledby="settingsTitle">
   <h2 id="settingsTitle">Calendar settings</h2>
   <p><button id="connect" aria-label="Sync settings"><span>Sync</span> <span id="syncLabel">Connect sync</span></button>

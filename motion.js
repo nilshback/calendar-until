@@ -5,18 +5,17 @@
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const segmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter() : null;
   const done = document.getElementById('finishEdit');
-  let before, original, latest, origins, timer, generation = 0;
+  let before, original, latest, insertions, timer;
 
   function clear() {
     clearTimeout(timer);
-    generation++;
     layer.hidden = true;
     layer.replaceChildren();
   }
   function parts(text) {
     return segmenter ? Array.from(segmenter.segment(text), item => item.segment) : Array.from(text);
   }
-  function draw(value, ranges, removing) {
+  function draw(value, ranges) {
     if (!ranges.length) return 0;
     const marks = [];
     let last = 0;
@@ -75,59 +74,39 @@
       });
     }
     layer.append(fragment);
-    const stagger = Math.min(26, 430 / Math.max(1,glyphs.length));
+    const stagger = Math.min(40, 820 / Math.max(1,glyphs.length));
     glyphs.forEach((glyph,index) => {
       const frames = [
         {opacity: 0, transform: 'translateY(2px) scale(.86)'},
-        {opacity: 1, transform: 'translateY(-1px) scale(1.07)', offset: .67},
+        {opacity: .6, transform: 'translateY(-1.5px) scale(1.07)', offset: .58},
         {opacity: 1, transform: 'none'}
       ];
-      glyph.animate(frames, {duration: 165, delay: (removing ? glyphs.length-1-index : index)*stagger,
-        direction: removing ? 'reverse' : 'normal', fill: 'both', easing: 'ease-out'});
+      glyph.animate(frames, {duration: 270, delay: index*stagger, fill: 'both', easing: 'ease-out'});
     });
-    return glyphs.length ? 165 + (glyphs.length-1)*stagger : 0;
+    return glyphs.length ? 270 + (glyphs.length-1)*stagger : 0;
   }
-  // An unchanged character keeps its position in the original note. Inserted
-  // characters carry -1, so unchanged text between separate edits stays still.
   function begin() {
     clear();
     original = latest = note.value;
-    origins = Array.from({length: original.length}, (_, index) => index);
+    insertions = '0'.repeat(original.length);
     done.hidden = note.readOnly;
   }
   function finish() {
     done.hidden = true;
-    if (!origins) return;
-    const old = original, value = latest, mapping = origins;
-    origins = before = null;
-    if (reduced.matches || note.value !== value || old === value) return;
-    const added = [], removed = [];
-    let previous = -1, insertedAt = -1;
-    for (let i = 0; i <= mapping.length; i++) {
-      const pos = i === mapping.length ? old.length : mapping[i];
-      if (pos === -1) {
-        if (insertedAt === -1) insertedAt = i;
-        continue;
-      }
-      if (insertedAt !== -1) { added.push([insertedAt, i]); insertedAt = -1; }
-      if (pos > previous+1) removed.push([previous+1, pos]);
-      previous = pos;
-    }
-    const version = generation;
-    const erase = draw(old, removed, true);
-    timer = setTimeout(() => {
-      if (generation !== version || note.value !== value || document.getElementById('editor').hidden) { clear(); return; }
-      const write = draw(value, added, false);
-      timer = setTimeout(clear, write);
-    }, erase);
+    const mask = insertions;
+    insertions = before = null;
+    if (!mask || reduced.matches || note.value !== latest || original === latest) return;
+    // Each run of ones marks text added during this edit that still exists.
+    const added = Array.from(mask.matchAll(/1+/g), match => [match.index, match.index + match[0].length]);
+    if (added.length) timer = setTimeout(clear, draw(latest, added));
   }
   note.addEventListener('focus', begin);
   note.addEventListener('beforeinput', () => {
-    if (!origins || latest !== note.value) begin();
+    if (insertions == null || latest !== note.value) begin();
     before = {value: note.value, start: note.selectionStart};
   });
   note.addEventListener('input', () => {
-    if (!before || !origins) return;
+    if (!before || insertions == null) return;
     const old = before;
     before = null;
     const value = note.value;
@@ -139,7 +118,7 @@
     }
     let oldEnd = old.value.length, end = value.length;
     while (oldEnd > start && end > start && old.value[oldEnd-1] === value[end-1]) {oldEnd--; end--;}
-    origins = origins.slice(0,start).concat(Array(end-start).fill(-1), origins.slice(oldEnd));
+    insertions = insertions.slice(0,start) + '1'.repeat(end-start) + insertions.slice(oldEnd);
     latest = value;
   });
   // Keep focus until click, including on browsers that blur on pointer down.

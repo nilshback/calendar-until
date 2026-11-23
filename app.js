@@ -76,7 +76,16 @@ function refresh() {
   const changed = lastDay !== today();
   if (changed) {
     lastDay = today();
-    for (const id of dates.keys()) paint(id);
+    let passed = 0;
+    for (const id of dates.keys()) {
+      paint(id);
+      if (id < lastDay) passed++;
+    }
+    const remaining = dates.size - passed;
+    $('elapsed').max = dates.size;
+    $('elapsed').value = passed;
+    $('passed').textContent = passed + (passed === 1 ? ' day passed' : ' days passed');
+    $('remaining').textContent = remaining + (remaining === 1 ? ' day left' : ' days left');
   }
   $('note').readOnly = locked();
   $('restore').disabled = locked();
