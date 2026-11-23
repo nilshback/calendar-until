@@ -31,7 +31,7 @@ h1 + p, #status { color: #626262; }
 [hidden], #notice:empty { display: none !important; }
 #notice { background: white; padding: .8rem; border-radius: .7rem; margin-top: 1rem; }
 #editor { margin-block: 1.5rem; padding: clamp(1rem, 4vw, 2rem); background: white; border: 1px solid #ddd; border-radius: 1rem; }
-textarea { width: 100%; min-height: 55vh; resize: vertical; margin-top: 1rem; padding: 1rem 0; border: 0; border-top: 1px solid #ddd; background: white; line-height: 1.65; }
+textarea { width: 100%; min-height: 55vh; resize: none; margin-top: 1rem; padding: 1rem 0; border: 0; border-top: 1px solid #ddd; background: white; line-height: 1.65; }
 dialog { width: min(28rem, 92vw); border: 1px solid #ddd; border-radius: 1rem; padding: 1.4rem; color: inherit; }
 dialog::backdrop { background: #0005; }
 dialog p { margin: .75rem 0; }
@@ -71,7 +71,7 @@ dialog button { margin: .2rem .1rem; }
 #elapsed::-webkit-progress-value { background: #007aff; border-radius: 1rem; }
 #elapsed::-moz-progress-bar { background: #007aff; border-radius: 1rem; }
 .counts { display: flex; justify-content: space-between; margin-top: .35rem; font-size: .83rem; color: #454545; font-variant-numeric: tabular-nums; }
-#back { border: 0; background: transparent; min-width: 44px; min-height: 44px; padding: 0; text-align: left; font-size: 1.75rem; font-weight: 400; }
+#back { border: 0; background: transparent; min-width: 44px; min-height: 44px; padding: 0; display: grid; place-items: center; }
 
 @media (pointer: coarse) {
   button, .calendar-progress summary { min-height: 44px; }
