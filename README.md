@@ -8,8 +8,8 @@ Serve the repository root using a local web server, or configure GitHub Pages to
 
 ## Connect devices
 
-1. Keep nilshback/calendar-until private. Publish the app from main. The separate journal-data branch holds journal.json and its Git history. Anyone with read access to the repository can read those entries.
-2. In GitHub, create a fine-grained personal access token for this repository only. Grant Contents read and write. A read-only token suffices for a device used only to read existing entries.
+1. Publish the website from main in nilshback/calendar-until. Keep nilshback/calendar-until-data private. Its main branch holds journal.json and its history. Anyone with read access to the data repository can read the journal.
+2. In GitHub, create a fine-grained personal access token for calendar-until-data only. Grant Contents read and write. A read-only token suffices for a device used only to read existing entries.
 3. Open the calendar on each device, select **Connect sync**, enter a token, then select **Connect this device**. **Remember on this device** stores the token in that browser profile. Otherwise the token lasts until you reload or close the page.
 4. Check for **Synced** before switching devices. The app checks on opening, on returning to the app, after typing, and every minute while visible. Local entries waiting for upload survive closing the page. If two devices change the same note independently, both versions appear in the entry for review.
 

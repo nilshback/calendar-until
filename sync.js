@@ -1,8 +1,8 @@
 'use strict';
-const api = 'https://api.github.com/repos/nilshback/calendar-until';
-const branch = 'journal-data';
+const api = 'https://api.github.com/repos/nilshback/calendar-until-data';
+const branch = 'main';
 const noteFile = '/contents/journal.json';
-const baseKey = prefix + 'cloud-base';
+const baseKey = prefix + 'calendar-until-data:cloud-base';
 const tokenKey = prefix + 'sync-token';
 let credential = '', pendingTimer, busy = false, again = false;
 
@@ -37,6 +37,9 @@ async function request(path, token, options = {}) {
     cache:'no-store', redirect:'error', ...options,
     headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'Content-Type':'application/json'}
   });
+  if(response.status === 401) throw Error('GitHub rejected the token. Enter a current token for calendar-until-data.');
+  if(response.status === 404) throw Error('Check that your token includes nilshback/calendar-until-data and that main contains journal.json.');
+  if(response.status === 403 && options.method === 'PUT') throw Error('GitHub blocked the upload. Check that your token has Contents read and write for calendar-until-data.');
   if(!response.ok) throw Error('GitHub returned '+response.status+'. Check the connection, token permissions, and repository branches.');
   return response.json();
 }
@@ -55,7 +58,7 @@ async function synchronize() {
   try {
     syncState('Syncing…','Checking the private repository.');
     const repo = await request('',token);
-    if(!repo.private || repo.default_branch === branch) throw Error('Sync requires a private repository with a separate journal-data branch.');
+    if(repo.private !== true) throw Error('Make calendar-until-data private before syncing.');
     const file = await request(noteFile+'?ref='+branch,token);
     const blob = file.encoding === 'base64' ? file : await request('/git/blobs/'+file.sha,token);
     const remote = decodeNotes(blob.content);
