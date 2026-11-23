@@ -7,7 +7,8 @@ const tokenKey = prefix + 'sync-token';
 let credential = '', pendingTimer, busy = false, again = false;
 
 function syncState(button, message) {
-  $('connect').textContent = button;
+  $('syncLabel').textContent = button;
+  $('connect').setAttribute('aria-label', 'Sync settings, '+button);
   $('syncMessage').textContent = message;
   $('retry').hidden = $('disconnect').hidden = !credential;
 }

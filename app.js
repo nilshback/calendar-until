@@ -17,15 +17,13 @@ function paint(id) {
   const row = rows.get(id), value = read(id);
   row.classList.toggle('past', id < today());
   row.classList.toggle('written', !!value.trim());
-  row.querySelector('.today').hidden = id !== today();
+  row.setAttribute('aria-current', id === today() ? 'date' : 'false');
   row.setAttribute('aria-label', dates.get(id).toLocaleDateString('en-US',{dateStyle:'full'}) + (value.trim() ? ', has note' : ''));
   row.classList.toggle('current', id === today());
-  row.querySelector('small').textContent = value.trim().split('\n')[0];
 }
 let month, list;
-for (let d = new Date(2026,10,23,12); key(d) <= end; d.setDate(d.getDate()+1)) {
+for (let d = new Date(2026,10,1,12); key(d) <= '2027-09-30'; d.setDate(d.getDate()+1)) {
   const id = key(d), m = id.slice(0,7);
-  dates.set(id,new Date(d));
   if (m !== month) {
     month = m;
     list = document.createElement('section');
@@ -43,13 +41,22 @@ for (let d = new Date(2026,10,23,12); key(d) <= end; d.setDate(d.getDate()+1)) {
     $('months').append(list);
     const cells = document.createElement('div');
     cells.className = 'days'; list.append(cells); list = cells;
-    $('jump').add(new Option(label+' '+d.getFullYear(),m));
   }
+  if (id < start || id > end) {
+    const day = document.createElement('span');
+    day.className = 'outside';
+    day.style.gridColumnStart = String((d.getDay()+6)%7+1);
+    day.textContent = String(d.getDate());
+    day.setAttribute('aria-hidden','true');
+    list.append(day);
+    continue;
+  }
+  dates.set(id,new Date(d));
   const row = document.createElement('button');
   row.style.gridColumnStart = String((d.getDay()+6)%7+1);
   row.setAttribute('aria-label',d.toLocaleDateString('en-US',{dateStyle:'full'}));
   row.className = 'row'; row.id = 'd'+id;
-  row.innerHTML = '<span class="num">'+id.slice(-2)+'</span><span class="weekday">'+d.toLocaleDateString('en-US',{weekday:'long'})+'</span><span class="today">Today</span><small></small>';
+  row.innerHTML = '<span class="num">'+d.getDate()+'</span>';
   row.onclick = () => { scrollTop = window.scrollY; history.pushState({daybook:true},'', '#'+id); route(); };
   list.append(row); rows.set(id,row); paint(id);
 }
@@ -58,7 +65,6 @@ function refresh() {
   if (changed) {
     lastDay = today();
     for (const id of dates.keys()) paint(id);
-    $('today').hidden = !dates.has(lastDay);
   }
   $('note').readOnly = locked();
   $('restore').disabled = locked();
@@ -98,14 +104,8 @@ $('note').oninput = () => {
   }
   paint(active);
 };
-$('jump').onchange = () => $('m'+$('jump').value).scrollIntoView();
-window.addEventListener('scroll', () => {
-  if (!$('calendar').hidden) for (const heading of document.querySelectorAll('.month')) {
-    if (heading.getBoundingClientRect().top > 80) break;
-    $('jump').value = heading.id.slice(1);
-  }
-},{passive:true});
-$('today').onclick = () => rows.get(today())?.scrollIntoView({block:'center'});
+$('settings').onclick = () => $('preferences').showModal();
+$('done').onclick = () => $('preferences').close();
 $('backup').onclick = () => {$('result').textContent='';$('panel').showModal();};
 $('close').onclick = () => $('panel').close();
 $('download').onclick = () => {
@@ -140,11 +140,3 @@ window.addEventListener('storage', e => {
 });
 window.addEventListener('focus',refresh);setInterval(refresh,1000);route();
 if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('./sw.js').catch(()=>{});
-
-function setLayout(mode) {
-  $('months').classList.toggle('as-list', mode === 'list');
-  $('grid').setAttribute('aria-pressed', String(mode !== 'list'));
-  $('agenda').setAttribute('aria-pressed', String(mode === 'list'));
-}
-$('grid').onclick = () => setLayout('month');
-$('agenda').onclick = () => setLayout('list');
