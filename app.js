@@ -21,6 +21,17 @@ function paint(id) {
   row.setAttribute('aria-label', dates.get(id).toLocaleDateString('en-US',{dateStyle:'full'}) + (value.trim() ? ', has note' : ''));
   row.classList.toggle('current', id === today());
 }
+function fillWeek(cells, date, firstOffset, lastOffset) {
+  for (let offset = firstOffset; offset <= lastOffset; offset++) {
+    const adjacent = new Date(date);
+    adjacent.setDate(adjacent.getDate() + offset);
+    const slot = document.createElement('span');
+    slot.className = 'outside adjacent';
+    slot.textContent = String(adjacent.getDate());
+    slot.setAttribute('aria-hidden', 'true');
+    cells.append(slot);
+  }
+}
 let month, list;
 for (let d = new Date(2026,10,1,12); key(d) <= '2027-09-30'; d.setDate(d.getDate()+1)) {
   const id = key(d), m = id.slice(0,7);
@@ -41,6 +52,7 @@ for (let d = new Date(2026,10,1,12); key(d) <= '2027-09-30'; d.setDate(d.getDate
     $('months').append(list);
     const cells = document.createElement('div');
     cells.className = 'days'; list.append(cells); list = cells;
+    fillWeek(cells, d, -((d.getDay()+6)%7), -1);
   }
   if (id < start || id > end) {
     const day = document.createElement('span');
@@ -49,16 +61,19 @@ for (let d = new Date(2026,10,1,12); key(d) <= '2027-09-30'; d.setDate(d.getDate
     day.textContent = String(d.getDate());
     day.setAttribute('aria-hidden','true');
     list.append(day);
-    continue;
+  } else {
+    dates.set(id,new Date(d));
+    const row = document.createElement('button');
+    row.style.gridColumnStart = String((d.getDay()+6)%7+1);
+    row.setAttribute('aria-label',d.toLocaleDateString('en-US',{dateStyle:'full'}));
+    row.className = 'row'; row.id = 'd'+id;
+    row.innerHTML = '<span class="num">'+d.getDate()+'</span>';
+    row.onclick = () => { scrollTop = window.scrollY; history.pushState({daybook:true},'', '#'+id); route(); };
+    list.append(row); rows.set(id,row); paint(id);
   }
-  dates.set(id,new Date(d));
-  const row = document.createElement('button');
-  row.style.gridColumnStart = String((d.getDay()+6)%7+1);
-  row.setAttribute('aria-label',d.toLocaleDateString('en-US',{dateStyle:'full'}));
-  row.className = 'row'; row.id = 'd'+id;
-  row.innerHTML = '<span class="num">'+d.getDate()+'</span>';
-  row.onclick = () => { scrollTop = window.scrollY; history.pushState({daybook:true},'', '#'+id); route(); };
-  list.append(row); rows.set(id,row); paint(id);
+  const tomorrow = new Date(d);
+  tomorrow.setDate(d.getDate()+1);
+  if (tomorrow.getDate() === 1) fillWeek(list, d, 1, (7-d.getDay())%7);
 }
 function refresh() {
   const changed = lastDay !== today();
