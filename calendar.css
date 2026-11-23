@@ -49,13 +49,15 @@ dialog button { margin: .2rem .1rem; }
   .row, .outside { min-height: 3.65rem; }
 }
 
-.adjacent { background: #e4e4e4; color: #838383; text-decoration: line-through; }
-.written .num { color: #b01f35; }
-.past.written .num { color: #994752; }
-.current.written .num { color: #ff8494; }
+.adjacent { background: linear-gradient(to top left, transparent calc(50% - .65px), #b7b7b7 50%, transparent calc(50% + .65px)) #e4e4e4; }
+.written .num { color: #e00031; }
+.past.written .num { color: #c51339; }
+.current.written .num { color: #ff637e; }
 .writing { position: relative; margin-top: 1rem; border-top: 1px solid #ddd; }
 .writing:focus-within { border-color: #888; }
 #note { display: block; margin: 0; border: 0; outline: none; border-radius: 0; }
 #replay { position: absolute; top: 0; left: 0; padding: 1rem 0; overflow: hidden; pointer-events: none; white-space: pre-wrap; overflow-wrap: break-word; line-height: 1.65; background: white; }
 #replay .ink { position: absolute; white-space: pre; transform-origin: 50% 75%; }
 #replay .measure { color: transparent; }
+
+.editor-actions { display: flex; align-items: center; gap: .65rem; }
