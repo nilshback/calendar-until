@@ -6,13 +6,17 @@
   const segmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter() : null;
   const done = document.getElementById('finishEdit');
   let before, original, latest, insertions;
-  let frame, replayVersion = 0;
+  let frame, replayVersion = 0, playback, resolvePlayback, enterTimer;
+  const viewport = window.visualViewport;
+  let keyboardLow, keyboardWidth;
 
   function clear() {
     cancelAnimationFrame(frame);
     replayVersion++;
     layer.hidden = true;
     layer.replaceChildren();
+    resolvePlayback?.();
+    resolvePlayback = playback = null;
   }
   function parts(text) {
     return segmenter ? Array.from(segmenter.segment(text), item => item.segment) : Array.from(text);
@@ -91,29 +95,71 @@
     insertions = '0'.repeat(original.length);
     done.hidden = note.readOnly;
   }
-  function finish() {
-    done.hidden = true;
+  function finish(keepEditing = false) {
+    clearTimeout(enterTimer);
+    done.hidden = !keepEditing || note.readOnly;
     const mask = insertions;
-    insertions = before = null;
-    if (!mask || reduced.matches || note.value !== latest || original === latest) return;
-    // Each run of ones marks text added during this edit that still exists.
+    const changed = original !== latest && latest === note.value;
+    const value = note.value;
+    original = latest = value;
+    insertions = keepEditing ? '0'.repeat(value.length) : null;
+    before = null;
+    if (!changed || !mask || reduced.matches) return playback;
     const added = Array.from(mask.matchAll(/1+/g), match => [match.index, match.index + match[0].length]);
-    if (!added.length) return;
+    if (!added.some(([start, end]) => value.slice(start, end).trim())) return playback;
+    clear();
     const version = replayVersion;
-    const value = latest;
-    frame = requestAnimationFrame(() => {
-      if (note.value !== value || document.getElementById('editor').hidden) return;
-      Promise.allSettled(draw(value, added)).then(() => {
+    playback = new Promise(resolve => { resolvePlayback = resolve; });
+    frame = requestAnimationFrame(async () => {
+      try {
+        if (note.value === value && !document.getElementById('editor').hidden) {
+          await Promise.allSettled(draw(value, added));
+        }
+      } finally {
         if (version === replayVersion) clear();
-      });
+      }
     });
+    return playback;
   }
-  note.addEventListener('focus', begin);
-  note.addEventListener('beforeinput', () => {
+  // The in-app back arrow waits for a visible replay before hiding the editor.
+  window.finishNoteReplay = () => {
+    note.blur();
+    return finish();
+  };
+  note.addEventListener('focus', () => {
+    begin();
+    keyboardLow = viewport?.height;
+    keyboardWidth = viewport?.width;
+  });
+  // Some phone keyboards dismiss without moving DOM focus.
+  viewport?.addEventListener('resize', () => {
+    if (document.activeElement !== note || !matchMedia('(pointer: coarse)').matches) return;
+    if (viewport.width !== keyboardWidth) {
+      keyboardWidth = viewport.width;
+      keyboardLow = viewport.height;
+    }
+    keyboardLow = Math.min(keyboardLow, viewport.height);
+    if (viewport.height - keyboardLow > 120) {
+      keyboardLow = viewport.height;
+      finish(true);
+    }
+  });
+  function queueEnter() {
+    clearTimeout(enterTimer);
+    enterTimer = setTimeout(() => {
+      if (document.activeElement === note) finish(true);
+    }, 0);
+  }
+  note.addEventListener('keydown', event => {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) queueEnter();
+  });
+  note.addEventListener('beforeinput', event => {
+    if (!event.isComposing && ['insertLineBreak','insertParagraph'].includes(event.inputType)) queueEnter();
     if (insertions == null || latest !== note.value) begin();
     before = {value: note.value, start: note.selectionStart};
   });
-  note.addEventListener('input', () => {
+  note.addEventListener('input', event => {
+    if (playback) clear();
     if (insertions == null) return;
     // Some mobile keyboards deliver autocorrect or dictation as input alone.
     const old = before || {value: latest, start: note.selectionStart};
@@ -129,11 +175,12 @@
     while (oldEnd > start && end > start && old.value[oldEnd-1] === value[end-1]) {oldEnd--; end--;}
     insertions = insertions.slice(0,start) + '1'.repeat(end-start) + insertions.slice(oldEnd);
     latest = value;
+    if (!event.isComposing && (['insertLineBreak','insertParagraph'].includes(event.inputType) || event.data === '\n' || (!event.inputType && value.slice(start,end) === '\n'))) finish(true);
   });
   // Keep focus until click, including on browsers that blur on pointer down.
   done.addEventListener('pointerdown', event => event.preventDefault());
   done.addEventListener('click', () => { note.blur(); });
-  note.addEventListener('blur', finish);
+  note.addEventListener('blur', () => finish());
   // Dismissing a phone keyboard often resizes the viewport during playback.
   // Let the animation finish across height changes; rotation changes text wrapping.
   let layoutWidth = document.documentElement.clientWidth;
@@ -142,7 +189,7 @@
     if (width !== layoutWidth) clear();
     layoutWidth = width;
   });
-  document.getElementById('editor').addEventListener('click', event => {
+  document.addEventListener('click', event => {
     if (event.target !== note && document.activeElement === note) note.blur();
   });
   window.addEventListener('popstate', clear);

@@ -129,7 +129,20 @@ document.addEventListener('visibilitychange', () => {
   if (!document.hidden) revealToday();
 });
 window.addEventListener('popstate',route);
-$('back').onclick = () => { if (history.state?.daybook) history.back(); else {history.replaceState(null,'',location.pathname+location.search);route();} };
+let leavingEditor = false;
+$('back').onclick = async () => {
+  if (leavingEditor) return;
+  leavingEditor = true;
+  const day = active;
+  try {
+    await window.finishNoteReplay?.();
+    if (active !== day || document.activeElement === $('note')) return;
+    if (history.state?.daybook) history.back();
+    else { history.replaceState(null,'',location.pathname+location.search); route(); }
+  } finally {
+    leavingEditor = false;
+  }
+};
 $('note').oninput = () => {
   if (locked()) { $('note').value = read(active);refresh();return; }
   const value = $('note').value;
