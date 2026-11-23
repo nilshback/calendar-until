@@ -72,3 +72,9 @@ dialog button { margin: .2rem .1rem; }
 #elapsed::-moz-progress-bar { background: #007aff; border-radius: 1rem; }
 .counts { display: flex; justify-content: space-between; margin-top: .35rem; font-size: .83rem; color: #454545; font-variant-numeric: tabular-nums; }
 #back { border: 0; background: transparent; min-width: 44px; min-height: 44px; padding: 0; text-align: left; font-size: 1.75rem; font-weight: 400; }
+
+@media (pointer: coarse) {
+  button, .calendar-progress summary { min-height: 44px; }
+  .editor-actions { flex-wrap: wrap; justify-content: flex-end; }
+  dialog { max-height: 90dvh; overflow-y: auto; }
+}
